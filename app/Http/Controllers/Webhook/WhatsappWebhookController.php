@@ -31,10 +31,12 @@ class WhatsappWebhookController extends Controller
         $waNumber = ServiceNumber::with('flow')->where('phone_number', $to)->first();
         if (!$waNumber) {
             Log::info("Unknown number");
+            return;
         }
 
         if ($waNumber->status != ServiceNumberStatusEnum::Active) {
             Log::info("This Number is Out Of Service");
+            return;
         }
 
         // 2) هل عنده Conversation Active؟
@@ -51,10 +53,12 @@ class WhatsappWebhookController extends Controller
                 $resp = new MessagingResponse();
                 $resp->message("لا يوجد Flow افتراضي للرقم ده.");
                 Log::info($resp);
+            return;
             }
 
             if ($flow->status != FlowStatusEnum::Active) {
                 Log::info("This Flow Has Been Disabled");
+            return;
             }
 
 
@@ -77,6 +81,7 @@ class WhatsappWebhookController extends Controller
             $resp = new MessagingResponse();
             $resp->message($firstStep->question_text);
             Log::info($resp);
+        return;
         }
 
         // 4) لو عنده Conversation Active → نكمل
@@ -100,6 +105,7 @@ class WhatsappWebhookController extends Controller
             $resp = new MessagingResponse();
             $resp->message($nextStep->question_text);
             Log::info($resp);
+        return;
         } else {
             // لو دي آخر خطوة → انهي المحادثة
             $conversation->update(['status' => ConversationStatusEnum::Finished]);
@@ -107,6 +113,7 @@ class WhatsappWebhookController extends Controller
             $resp = new MessagingResponse();
             $resp->message("شكرًا، تم إنهاء المحادثة ✅");
             Log::info($resp);
+        return;
         }
 
     }
