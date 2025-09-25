@@ -30,11 +30,11 @@ class WhatsappWebhookController extends Controller
         // 1) نجيب رقم الواتساب المستهدف
         $waNumber = ServiceNumber::with('flow')->where('phone_number', $to)->first();
         if (!$waNumber) {
-            return response("Unknown number", 400);
+            Log::info("Unknown number");
         }
 
         if ($waNumber->status != ServiceNumberStatusEnum::Active) {
-            return response("This Number is Out Of Service", 422);
+            Log::info("This Number is Out Of Service");
         }
 
         // 2) هل عنده Conversation Active؟
@@ -50,11 +50,11 @@ class WhatsappWebhookController extends Controller
             if (!$flow) {
                 $resp = new MessagingResponse();
                 $resp->message("لا يوجد Flow افتراضي للرقم ده.");
-                return response($resp, 200)->header('Content-Type', 'text/xml');
+                Log::info($resp);
             }
 
             if ($flow->status != FlowStatusEnum::Active) {
-                return response("This Flow Has Been Disabled", 422);
+                Log::info("This Flow Has Been Disabled");
             }
 
 
@@ -76,7 +76,7 @@ class WhatsappWebhookController extends Controller
 
             $resp = new MessagingResponse();
             $resp->message($firstStep->question_text);
-            return response($resp, 200)->header('Content-Type', 'text/xml');
+            Log::info($resp);
         }
 
         // 4) لو عنده Conversation Active → نكمل
@@ -99,14 +99,14 @@ class WhatsappWebhookController extends Controller
 
             $resp = new MessagingResponse();
             $resp->message($nextStep->question_text);
-            return response($resp, 200)->header('Content-Type', 'text/xml');
+            Log::info($resp);
         } else {
             // لو دي آخر خطوة → انهي المحادثة
             $conversation->update(['status' => ConversationStatusEnum::Finished]);
 
             $resp = new MessagingResponse();
             $resp->message("شكرًا، تم إنهاء المحادثة ✅");
-            return response($resp, 200)->header('Content-Type', 'text/xml');
+            Log::info($resp);
         }
 
     }
