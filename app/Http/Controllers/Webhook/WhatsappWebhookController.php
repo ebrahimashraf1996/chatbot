@@ -22,6 +22,11 @@ class WhatsappWebhookController extends Controller
         $body    = trim($request->input('Body'));
         $to      = $request->input('To');     // رقمنا اللي وصله الرسالة
 
+
+        Log::info($request->all());
+        Log::info("أهلاً! استقبلنا رسالتك: {$body}");
+
+
         // 1) نجيب رقم الواتساب المستهدف
         $waNumber = ServiceNumber::with('flow')->where('phone_number', $to)->first();
         if (!$waNumber) {
