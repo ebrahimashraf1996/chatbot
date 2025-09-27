@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Webhook;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Flow;
+use App\Models\FlowStep;
 use App\Models\Message;
 use App\Models\ServiceNumber;
 use Illuminate\Http\Request;
 use Log;
+use Twilio\Rest\Client;
 use Twilio\TwiML\MessagingResponse;
 use App\Enums\Flow\FlowStatusEnum;
 use App\Enums\Conversation\ConversationStatusEnum;
@@ -16,6 +18,23 @@ use App\Enums\ServiceNumber\ServiceNumberStatusEnum;
 
 class WhatsappWebhookController extends Controller
 {
+    protected $fromPhone;
+    protected $account_sid;
+    protected $auth_token;
+    protected $reminder_sid;
+    protected $notification_sid;
+    protected $message_sid;
+
+    public function __construct()
+    {
+        $this->fromPhone = config('twillio.from');
+        $this->account_sid = config('twillio.account_sid');
+        $this->auth_token = config('twillio.auth_token');
+        $this->reminder_sid = config('twillio.templates.reminder');
+        $this->notification_sid = config('twillio.templates.notification');
+        $this->message_sid = config('twillio.templates.message');
+    }
+
     public function handle(Request $request)
     {
         $from = $request->input('From');   // ex: whatsapp:+201234567890
@@ -59,7 +78,10 @@ class WhatsappWebhookController extends Controller
                 return $resp;
             }
 
-            $firstStep = $flow->steps()->where('is_start', true)->first();
+            $firstStep = $flow->steps()
+                ->with(['flow', 'nextStep', 'answers'])
+                ->where('is_start', true)
+                ->first();
 
             $conversation = Conversation::create([
                 'user_phone'        => $from,
@@ -75,11 +97,8 @@ class WhatsappWebhookController extends Controller
                 'bot_response'    => $firstStep->question_text,
             ]);
 
-            $resp = new MessagingResponse();
-            $resp->message($firstStep->question_text);
-
-            // هنا هنعمل Generate لل Message
-            // هنستخدم ال Enums في ال Generate
+            $message = $this->generateMessages($firstStep->id);
+            $resp = $this->sendMessage($message, $from);
 
             return $resp;
         }
@@ -151,6 +170,31 @@ class WhatsappWebhookController extends Controller
             default:
                 return "❌ إجابة غير صالحة.";
         }
+    }
+
+    public function generateMessages(FlowStep $step) {
+        $message = "{$step->question_text}\n";
+
+        if ($step->expected_answer_type == FlowStepExpectedAnswerTypeEnum::Choice) {
+            foreach ($step->answers as $answer) {
+                $message .= "{$answer->answer_value} : {$answer->answer_label}\n";
+            }
+        }
+        return $message;
+    }
+
+    public function sendMessage($message, $phone) {
+        $sid    = $this->account_sid;
+        $token  = $this->auth_token;
+        $twilio = new Client($sid, $token);
+
+        return $twilio->messages
+            ->create($phone, // to
+                array(
+                    "from" => $this->fromPhone,
+                    "body" => $message
+                )
+            );
     }
 
 }

@@ -28,12 +28,7 @@ class FlowSeeder extends Seeder
             'status' => FlowStatusEnum::Active,
         ]);
 
-        $endingTextStep = FlowStep::create([
-            'flow_id' => $flow->id,
-            'question_text' => 'شكرا لكم .. سيتم التواصل معكم في أقرب وقت ممكن',
-            'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::End,
-            'next_step_id' => null,
-        ]);
+
 
 
         // Step 1: Welcome
@@ -49,6 +44,12 @@ class FlowSeeder extends Seeder
             'flow_id' => $flow->id,
             'question_text' => 'من فضلك ادخل رقم موبايل للتواصل',
             'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::Text,
+            'next_step_id' => null,
+        ]);
+        $endingTextStep = FlowStep::create([
+            'flow_id' => $flow->id,
+            'question_text' => 'شكرا لكم .. سيتم التواصل معكم في أقرب وقت ممكن',
+            'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::End,
             'next_step_id' => null,
         ]);
         $step3 = FlowStep::create([

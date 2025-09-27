@@ -34,7 +34,7 @@ class FlowStep extends Model
     }
 
     public function answers() {
-        return $this->hasMany(Answer::class, 'flow_id');
+        return $this->hasMany(Answer::class, 'flow_step_id');
     }
 
 }
