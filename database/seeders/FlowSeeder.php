@@ -143,7 +143,7 @@ class FlowSeeder extends Seeder
         $serviceNumber = ServiceNumber::create([
             'flow_id' => $flow->id,
             'name' => 'رقم خدمة عملاء',
-            'phone_number' => 'whatsapp:+15558741812',
+            'phone_number' => 'whatsapp:+14155238886',
             'twilio_sid' => env('TWILIO_ACCOUNT_SID'),
             'twilio_token' => env('TWILIO_AUTH_TOKEN'),
             'status' => ServiceNumberStatusEnum::Active

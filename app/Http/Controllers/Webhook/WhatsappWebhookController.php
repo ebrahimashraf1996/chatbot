@@ -18,7 +18,6 @@ use App\Enums\ServiceNumber\ServiceNumberStatusEnum;
 
 class WhatsappWebhookController extends Controller
 {
-    protected $fromPhone;
     protected $account_sid;
     protected $auth_token;
     protected $reminder_sid;
@@ -27,7 +26,6 @@ class WhatsappWebhookController extends Controller
 
     public function __construct()
     {
-        $this->fromPhone = config('twillio.from');
         $this->account_sid = config('twillio.account_sid');
         $this->auth_token = config('twillio.auth_token');
         $this->reminder_sid = config('twillio.templates.reminder');
@@ -37,15 +35,15 @@ class WhatsappWebhookController extends Controller
 
     public function handle(Request $request)
     {
-        $from = $request->input('From');   // ex: whatsapp:+201234567890
+        $client_phone = $request->input('From');   // ex: whatsapp:+201234567890
         $body = trim($request->input('Body'));
-        $to   = $request->input('To');     // رقمنا اللي وصله الرسالة
+        $our_phone   = $request->input('To');     // رقمنا اللي وصله الرسالة
 
         Log::info($request->all());
-        Log::info("📩 رسالة جديدة من {$from}: {$body}");
+        Log::info("📩 رسالة جديدة من {$client_phone}: {$body}");
 
         // 1) نجيب رقم الواتساب المستهدف
-        $waNumber = ServiceNumber::with('flow')->where('phone_number', $to)->first();
+        $waNumber = ServiceNumber::with('flow')->where('phone_number', $our_phone)->first();
         if (!$waNumber) {
             Log::info("❌ Unknown number");
             return;
@@ -57,7 +55,7 @@ class WhatsappWebhookController extends Controller
         }
 
         // 2) هل عنده Conversation Active؟
-        $conversation = Conversation::where('user_phone', $from)
+        $conversation = Conversation::where('user_phone', $client_phone)
             ->where('service_number_id', $waNumber->id)
             ->where('status', ConversationStatusEnum::Active)
             ->first();
@@ -84,7 +82,7 @@ class WhatsappWebhookController extends Controller
                 ->first();
 
             $conversation = Conversation::create([
-                'user_phone'        => $from,
+                'user_phone'        => $client_phone,
                 'service_number_id' => $waNumber->id,
                 'current_step_id'   => $firstStep->id,
                 'status'            => ConversationStatusEnum::Active,
@@ -98,7 +96,7 @@ class WhatsappWebhookController extends Controller
             ]);
 
             $message = $this->generateMessages($firstStep->id);
-            $resp = $this->sendMessage($message, $from);
+            $resp = $this->sendMessage($message, $client_phone, $our_phone);
 
             return $resp;
         }
