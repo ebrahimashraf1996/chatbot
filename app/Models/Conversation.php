@@ -11,7 +11,7 @@ class Conversation extends Model
     use HasUuids;
 
     protected $fillable = [
-        'user_phone', 'service_number_id', 'current_step_id', 'status'
+        'user_phone', 'service_number_id', 'current_step_id', 'status', 'finished_at'
     ];
 
     protected $casts = [

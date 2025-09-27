@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignUuid('service_number_id')->constrained('service_numbers')->cascadeOnDelete();
             $table->foreignUuid('current_step_id')->nullable()->constrained('flow_steps')->nullOnDelete();
             $table->string('status')->default('active')->comment("From ConversationStatusEnum");
+            $table->dateTime('finished_at')->nullable();
             $table->timestamps();
         });
     }

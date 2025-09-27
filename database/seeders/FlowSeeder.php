@@ -69,9 +69,11 @@ class FlowSeeder extends Seeder
 
         $step4 = FlowStep::create([
             'flow_id' => $flow->id,
-            'question_text' => 'يرجي التواصل علي الرقم التالي لتحديد أقرب فرع +201147232702',
+            'question_text' => "يرجي التواصل علي الرقم التالي لتحديد أقرب فرع +201147232702 \n
+            شكرا لتواصلكم معنا !!",
             'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::Text,
             'next_step_id' => null,
+            'is_end' => true
         ]);
 
         $step5 = FlowStep::create([

@@ -9,6 +9,7 @@ use App\Models\Flow;
 use App\Models\FlowStep;
 use App\Models\Message;
 use App\Models\ServiceNumber;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Log;
 use Twilio\Rest\Client;
@@ -60,9 +61,27 @@ class WhatsappWebhookController extends Controller
         $conversation = Conversation::where('user_phone', $client_phone)
             ->where('service_number_id', $waNumber->id)
             ->where('status', ConversationStatusEnum::Active)
+            ->latest('created_at')
             ->first();
 
         if (!$conversation) {
+
+            $latest_finished_conversation = Conversation::where('user_phone', $client_phone)
+                ->where('service_number_id', $waNumber->id)
+                ->where('status', ConversationStatusEnum::Finished)
+                ->latest('finished_at')
+                ->first();
+
+            $finishedAt = Carbon::parse($latest_finished_conversation->finished_at);
+
+            $diffInMinutes = $finishedAt->diffInMinutes(now());
+
+            if ($diffInMinutes < 1) {
+                $resp = $this->sendMessage("يرجي الانتظار 5 دقائق حتي تتمكن من التواصل مرة اخري", $client_phone, $our_phone);
+                return $resp;
+            }
+
+
             // 3) مفيش → نبدأ فلو جديد (Default Flow)
             $flow = $waNumber->flow;
 
@@ -105,7 +124,7 @@ class WhatsappWebhookController extends Controller
         }
 
         if ($body == 'إنهاء المحادثة') {
-            $conversation->update(['status' => ConversationStatusEnum::Finished]);
+            $conversation->update(['status' => ConversationStatusEnum::Finished, 'finished_at' => now()]);
 
 
             $resp = $this->sendMessage("✅ شكرًا، تم إنهاء المحادثة.", $client_phone, $our_phone);
@@ -156,13 +175,13 @@ class WhatsappWebhookController extends Controller
             $resp = $this->sendMessage($message, $client_phone, $our_phone);
 
             if ($nextStep->is_end) {
-                $conversation->update(['status' => ConversationStatusEnum::Finished]);
+                $conversation->update(['status' => ConversationStatusEnum::Finished, 'finished_at' => now()]);
             }
 
             return $resp;
         } else {
             // لو دي آخر خطوة → انهي المحادثة
-            $conversation->update(['status' => ConversationStatusEnum::Finished]);
+            $conversation->update(['status' => ConversationStatusEnum::Finished, 'finished_at' => now()]);
 
 
             $resp = $this->sendMessage("✅ شكرًا، تم إنهاء المحادثة.", $client_phone, $our_phone);
