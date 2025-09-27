@@ -104,6 +104,14 @@ class WhatsappWebhookController extends Controller
             return $resp;
         }
 
+        if ($body == 'إنهاء المحادثة') {
+            $conversation->update(['status' => ConversationStatusEnum::Finished]);
+
+
+            $resp = $this->sendMessage("✅ شكرًا، تم إنهاء المحادثة.", $client_phone, $our_phone);
+            return $resp;
+        }
+
         // 4) لو عنده Conversation Active → نكمل
         $currentStep = $conversation->currentStep;
 
@@ -160,6 +168,9 @@ class WhatsappWebhookController extends Controller
 
     private function validateAnswer($step, $message): bool
     {
+        Log::info($step);
+        Log::info($message);
+
         switch ($step->expected_answer_type) {
             case FlowStepExpectedAnswerTypeEnum::Number :
                 return is_numeric($message);
@@ -187,7 +198,7 @@ class WhatsappWebhookController extends Controller
         }
     }
 
-    public function generateMessages(FlowStep $step) {
+    public function generateMessages(FlowStep $step, $is_first = false) {
         $message = "{$step->question_text}\n";
 
         if ($step->expected_answer_type == FlowStepExpectedAnswerTypeEnum::Choice) {
@@ -195,6 +206,11 @@ class WhatsappWebhookController extends Controller
                 $message .= "{$answer->answer_value} : {$answer->answer_label}\n";
             }
         }
+
+        if ($is_first) {
+            $message .= 'يمكنك إنهاء المحادثة عن طريق إرسال كلمة "إنهاء المحادثة"';
+        }
+
         return $message;
     }
 
