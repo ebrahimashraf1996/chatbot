@@ -95,7 +95,7 @@ class WhatsappWebhookController extends Controller
                 'bot_response'    => $firstStep->question_text,
             ]);
 
-            $message = $this->generateMessages($firstStep->id);
+            $message = $this->generateMessages($firstStep);
             $resp = $this->sendMessage($message, $client_phone, $our_phone);
 
             return $resp;
