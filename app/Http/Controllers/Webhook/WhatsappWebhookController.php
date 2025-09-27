@@ -66,22 +66,23 @@ class WhatsappWebhookController extends Controller
 
         if (!$conversation) {
 
-            $latest_finished_conversation = Conversation::where('user_phone', $client_phone)
-                ->where('service_number_id', $waNumber->id)
-                ->where('status', ConversationStatusEnum::Finished)
-                ->latest('finished_at')
-                ->first();
 
-            if ($latest_finished_conversation) {
-                $finishedAt = Carbon::parse($latest_finished_conversation->finished_at);
-
-                $diffInMinutes = $finishedAt->diffInMinutes(now());
-
-                if ($diffInMinutes < 1) {
-                    $resp = $this->sendMessage("يرجي الانتظار 5 دقائق حتي تتمكن من التواصل مرة اخري", $client_phone, $our_phone);
-                    return $resp;
-                }
-            }
+//            $latest_finished_conversation = Conversation::where('user_phone', $client_phone)
+//                ->where('service_number_id', $waNumber->id)
+//                ->where('status', ConversationStatusEnum::Finished)
+//                ->latest('finished_at')
+//                ->first();
+//
+//            if ($latest_finished_conversation) {
+//                $finishedAt = Carbon::parse($latest_finished_conversation->finished_at);
+//
+//                $diffInMinutes = $finishedAt->diffInMinutes(now());
+//
+//                if ($diffInMinutes < 1) {
+//                    $resp = $this->sendMessage("يرجي الانتظار 5 دقائق حتي تتمكن من التواصل مرة اخري", $client_phone, $our_phone);
+//                    return $resp;
+//                }
+//            }
 
             // 3) مفيش → نبدأ فلو جديد (Default Flow)
             $flow = $waNumber->flow;
