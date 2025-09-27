@@ -166,7 +166,7 @@ class WhatsappWebhookController extends Controller
             case FlowStepExpectedAnswerTypeEnum::Choice:
                 $options = $step->answers->pluck('answer_value')->toArray();
                 return array_key_exists($message, $options);
-            case 'text':
+            case FlowStepExpectedAnswerTypeEnum::Text :
                 return !empty(trim($message));
             default:
                 return false;

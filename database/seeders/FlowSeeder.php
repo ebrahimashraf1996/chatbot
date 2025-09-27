@@ -42,7 +42,7 @@ class FlowSeeder extends Seeder
 
         $step2 = FlowStep::create([
             'flow_id' => $flow->id,
-            'question_text' => 'من فضلك ادخل رقم موبايل للتواصل',
+            'question_text' => 'من فضلك ادخل رقم موبايل للتواصل مع مراعاة بدأ الرقم ب +201xxxxxxxxx',
             'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::Text,
             'next_step_id' => null,
         ]);
