@@ -18,24 +18,22 @@ class WhatsappWebhookController extends Controller
 {
     public function handle(Request $request)
     {
-        $from    = $request->input('From');   // ex: whatsapp:+201234567890
-        $body    = trim($request->input('Body'));
-        $to      = $request->input('To');     // رقمنا اللي وصله الرسالة
-
+        $from = $request->input('From');   // ex: whatsapp:+201234567890
+        $body = trim($request->input('Body'));
+        $to   = $request->input('To');     // رقمنا اللي وصله الرسالة
 
         Log::info($request->all());
-        Log::info("أهلاً! استقبلنا رسالتك: {$body}");
-
+        Log::info("📩 رسالة جديدة من {$from}: {$body}");
 
         // 1) نجيب رقم الواتساب المستهدف
         $waNumber = ServiceNumber::with('flow')->where('phone_number', $to)->first();
         if (!$waNumber) {
-            Log::info("Unknown number");
+            Log::info("❌ Unknown number");
             return;
         }
 
         if ($waNumber->status != ServiceNumberStatusEnum::Active) {
-            Log::info("This Number is Out Of Service");
+            Log::info("❌ This Number is Out Of Service");
             return;
         }
 
@@ -51,43 +49,48 @@ class WhatsappWebhookController extends Controller
 
             if (!$flow) {
                 $resp = new MessagingResponse();
-                $resp->message("لا يوجد Flow افتراضي للرقم ده.");
-                Log::info($resp);
-            return;
+                $resp->message("❌ لا يوجد Flow افتراضي للرقم ده.");
+                return $resp;
             }
 
             if ($flow->status != FlowStatusEnum::Active) {
-                Log::info("This Flow Has Been Disabled");
-            return;
+                $resp = new MessagingResponse();
+                $resp->message("⚠️ هذا الـ Flow تم تعطيله حالياً.");
+                return $resp;
             }
-
 
             $firstStep = $flow->steps()->orderBy('step_order')->first();
 
             $conversation = Conversation::create([
-                'user_phone' => $from,
+                'user_phone'        => $from,
                 'service_number_id' => $waNumber->id,
-                'current_step_id' => $firstStep->id,
-                'status' => ConversationStatusEnum::Active,
+                'current_step_id'   => $firstStep->id,
+                'status'            => ConversationStatusEnum::Active,
             ]);
 
             Message::create([
                 'conversation_id' => $conversation->id,
-                'step_id' => $firstStep->id,
-                'user_message' => $body,
-                'bot_response' => $firstStep->question_text,
+                'step_id'         => $firstStep->id,
+                'user_message'    => $body,
+                'bot_response'    => $firstStep->question_text,
             ]);
 
             $resp = new MessagingResponse();
             $resp->message($firstStep->question_text);
-            Log::info($resp);
-        return;
+            return $resp;
         }
 
         // 4) لو عنده Conversation Active → نكمل
         $currentStep = $conversation->currentStep;
 
-        // هنا ممكن نتحقق من expected_answer_type (هنعملها في Step Engine بعدين)
+        // ✅ هنا التحقق من نوع الإجابة
+        if (!$this->validateAnswer($currentStep, $body)) {
+            $resp = new MessagingResponse();
+            $resp->message($this->getErrorMessage($currentStep));
+            return $resp;
+        }
+
+        // لو صح → نكمل للـ Next Step
         $nextStep = $currentStep->nextStep;
 
         if ($nextStep) {
@@ -97,25 +100,53 @@ class WhatsappWebhookController extends Controller
             // سجل في Conversation Log
             Message::create([
                 'conversation_id' => $conversation->id,
-                'step_id' => $nextStep->id,
-                'user_message' => $body,
-                'bot_response' => $nextStep->question_text,
+                'step_id'         => $nextStep->id,
+                'user_message'    => $body,
+                'bot_response'    => $nextStep->question_text,
             ]);
 
             $resp = new MessagingResponse();
             $resp->message($nextStep->question_text);
-            Log::info($resp);
-        return;
+            return $resp;
         } else {
             // لو دي آخر خطوة → انهي المحادثة
             $conversation->update(['status' => ConversationStatusEnum::Finished]);
 
             $resp = new MessagingResponse();
-            $resp->message("شكرًا، تم إنهاء المحادثة ✅");
-            Log::info($resp);
-        return;
+            $resp->message("✅ شكرًا، تم إنهاء المحادثة.");
+            return $resp;
         }
+    }
 
+
+    private function validateAnswer($step, $message): bool
+    {
+        switch ($step->expected_answer_type) {
+            case 'number':
+                return is_numeric($message);
+            case 'choice':
+                $options = json_decode($step->options, true) ?? [];
+                return array_key_exists($message, $options);
+            case 'text':
+                return !empty(trim($message));
+            case 'any':
+            default:
+                return true;
+        }
+    }
+
+    private function getErrorMessage($step): string
+    {
+        switch ($step->expected_answer_type) {
+            case 'number':
+                return "❌ من فضلك أدخل رقم صحيح.";
+            case 'choice':
+                return "❌ اختيار غير صحيح. حاول مرة أخرى.";
+            case 'text':
+                return "❌ الرد النصي مطلوب.";
+            default:
+                return "❌ إجابة غير صالحة.";
+        }
     }
 
 }

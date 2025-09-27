@@ -8,7 +8,7 @@ enum FlowStepExpectedAnswerTypeEnum: string
     case Text = 'text';
     case Number = 'number';
     case Choice = 'choice';
-    case Any = 'any';
+    case End = 'end';
 
     public function getLabel(): ?string
     {
@@ -16,7 +16,7 @@ enum FlowStepExpectedAnswerTypeEnum: string
             self::Text => __('Text'),
             self::Number => __('Number'),
             self::Choice => __('Choice'),
-            self::Any => __('Any'),
+            self::End => __('End'),
         };
     }
 }

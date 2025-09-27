@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('flow_steps', function (Blueprint $table) {
+        Schema::create('answers', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('flow_id')->constrained('flows')->cascadeOnDelete();
+            $table->foreignUuid('flow_step_id')->nullable()->constrained('flow_steps')->nullOnDelete();
+            $table->integer('answer_value');
+            $table->string('answer_label');
             $table->foreignUuid('next_step_id')->nullable()->constrained('flow_steps')->nullOnDelete();
-            $table->string('expected_answer_type')->default('text')->comment("From FlowStepExpectedAnswerTypeEnum");
-            $table->text('question_text');
             $table->timestamps();
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('flow_steps');
+        Schema::dropIfExists('answers');
     }
 };
