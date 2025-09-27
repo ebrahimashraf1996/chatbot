@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('expected_answer_type')->default('text')->comment("From FlowStepExpectedAnswerTypeEnum");
             $table->text('question_text');
             $table->boolean('is_start')->default(false);
+            $table->boolean('is_end')->default(false);
             $table->timestamps();
         });
     }

@@ -154,6 +154,11 @@ class WhatsappWebhookController extends Controller
             ]);
 
             $resp = $this->sendMessage($message, $client_phone, $our_phone);
+
+            if ($nextStep->is_end) {
+                $conversation->update(['status' => ConversationStatusEnum::Finished]);
+            }
+
             return $resp;
         } else {
             // لو دي آخر خطوة → انهي المحادثة

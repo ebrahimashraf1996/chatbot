@@ -16,11 +16,13 @@ class FlowStep extends Model
         'expected_answer_type',
         'question_text',
         'is_start',
+        'is_end'
     ];
 
     protected $casts = [
         'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::class,
         'is_start' => 'boolean',
+        'is_end' => 'boolean',
     ];
 
     public function flow()

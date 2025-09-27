@@ -46,18 +46,18 @@ class FlowSeeder extends Seeder
             'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::Text,
             'next_step_id' => null,
         ]);
-//        $endingTextStep = FlowStep::create([
-//            'flow_id' => $flow->id,
-//            'question_text' => 'شكرا لكم .. سيتم التواصل معكم في أقرب وقت ممكن',
-//            'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::End,
-//            'next_step_id' => null,
-//        ]);
+        $endingTextStep = FlowStep::create([
+            'flow_id' => $flow->id,
+            'question_text' => 'شكرا لكم .. سيتم التواصل معكم في أقرب وقت ممكن',
+            'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::End,
+            'next_step_id' => null,
+            'is_end' => true
+        ]);
         $step3 = FlowStep::create([
             'flow_id' => $flow->id,
             'question_text' => 'من فضلك ادخل رقم الطلب',
             'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::Number,
-            'next_step_id' => null,
-//            'next_step_id' => $endingTextStep->id,
+            'next_step_id' => $endingTextStep->id,
         ]);
 
         $step2->update([
@@ -85,8 +85,7 @@ class FlowSeeder extends Seeder
             'flow_id' => $flow->id,
             'question_text' => 'يرجي توضيح المشكلة بشكل تفصيلي',
             'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::Text,
-//            'next_step_id' => $endingTextStep->id,
-            'next_step_id' => null,
+            'next_step_id' => $endingTextStep->id,
 
         ]);
 
@@ -94,8 +93,7 @@ class FlowSeeder extends Seeder
             'flow_id' => $flow->id,
             'question_text' => 'يرجي توضيح النشاط التجاري',
             'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::Text,
-            'next_step_id' => null,
-//            'next_step_id' => $endingTextStep->id,
+            'next_step_id' => $endingTextStep->id,
         ]);
 
 
