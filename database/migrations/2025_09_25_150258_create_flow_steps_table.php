@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignUuid('next_step_id')->nullable()->constrained('flow_steps')->nullOnDelete();
             $table->string('expected_answer_type')->default('text')->comment("From FlowStepExpectedAnswerTypeEnum");
             $table->text('question_text');
+            $table->boolean('is_start')->default(false);
             $table->timestamps();
         });
     }

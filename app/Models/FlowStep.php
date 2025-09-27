@@ -11,14 +11,16 @@ class FlowStep extends Model
     use HasUuids;
 
     protected $fillable = [
-        'flow_id', 'step_order', 'question_text',
-        'expected_answer_type', 'options', 'next_step_id'
+        'flow_id',
+        'next_step_id',
+        'expected_answer_type',
+        'question_text',
+        'is_start',
     ];
 
     protected $casts = [
-        'options' => 'array',
-        'step_order' => 'integer',
-        'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::class
+        'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::class,
+        'is_start' => 'boolean',
     ];
 
     public function flow()
@@ -29,6 +31,10 @@ class FlowStep extends Model
     public function nextStep()
     {
         return $this->belongsTo(FlowStep::class, 'next_step_id');
+    }
+
+    public function answers() {
+        return $this->hasMany(Answer::class, 'flow_id');
     }
 
 }

@@ -59,7 +59,7 @@ class WhatsappWebhookController extends Controller
                 return $resp;
             }
 
-            $firstStep = $flow->steps()->orderBy('step_order')->first();
+            $firstStep = $flow->steps()->where('is_start', true)->first();
 
             $conversation = Conversation::create([
                 'user_phone'        => $from,
@@ -77,6 +77,10 @@ class WhatsappWebhookController extends Controller
 
             $resp = new MessagingResponse();
             $resp->message($firstStep->question_text);
+
+            // هنا هنعمل Generate لل Message
+            // هنستخدم ال Enums في ال Generate
+
             return $resp;
         }
 

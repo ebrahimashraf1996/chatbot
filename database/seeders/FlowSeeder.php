@@ -42,6 +42,7 @@ class FlowSeeder extends Seeder
             'question_text' => '👋 أهلاً بيك في شركتنا! اقدر اساعدك ازاي؟',
             'expected_answer_type' => FlowStepExpectedAnswerTypeEnum::Choice,
             'next_step_id' => null,
+            'is_start' => true,
         ]);
 
         $step2 = FlowStep::create([
