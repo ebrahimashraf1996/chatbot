@@ -14,7 +14,10 @@ Route::get('/test', function () {
             array(
                 "from" => "whatsapp:+15558741812",
                 "contentSid" => "HXb5b62575e6e4ff6129ad7c8efe1f983e",
-                "contentVariables" => "{"1":"12/1","2":"3pm"}",
+                "contentVariables" => json_encode([
+                    "1" => "12/1",
+                    "2" => "3pm"
+                ]),
                 "body" => "Your Message"
         )
       );
