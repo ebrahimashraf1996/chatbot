@@ -111,7 +111,7 @@ class WhatsappWebhookController extends Controller
                 'status' => ConversationStatusEnum::Active,
             ]);
 
-            $message = $this->generateMessages($firstStep);
+            $message = $this->generateMessages($firstStep, true);
 
             Message::create([
                 'conversation_id' => $conversation->id,
