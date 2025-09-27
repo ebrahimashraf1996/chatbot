@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Twilio\TwiML\MessagingResponse;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get('/test', function () {
+    $resp = new MessagingResponse();
+    $resp->message('test');
 });
