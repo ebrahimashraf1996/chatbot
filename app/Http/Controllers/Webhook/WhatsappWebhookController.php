@@ -213,11 +213,11 @@ class WhatsappWebhookController extends Controller
     private function getErrorMessage($step): string
     {
         switch ($step->expected_answer_type) {
-            case 'number':
+            case FlowStepExpectedAnswerTypeEnum::Number :
                 return "❌ من فضلك أدخل رقم صحيح.";
-            case 'choice':
+            case FlowStepExpectedAnswerTypeEnum::Choice:
                 return "❌ اختيار غير صحيح. حاول مرة أخرى.";
-            case 'text':
+            case FlowStepExpectedAnswerTypeEnum::Text :
                 return "❌ الرد النصي مطلوب.";
             default:
                 return "❌ إجابة غير صالحة.";
