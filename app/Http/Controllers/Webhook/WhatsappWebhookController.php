@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Webhook;
 
 use App\Http\Controllers\Controller;
+use App\Models\Answer;
 use App\Models\Conversation;
 use App\Models\Flow;
 use App\Models\FlowStep;
@@ -89,14 +90,15 @@ class WhatsappWebhookController extends Controller
                 'status'            => ConversationStatusEnum::Active,
             ]);
 
+            $message = $this->generateMessages($firstStep);
+
             Message::create([
                 'conversation_id' => $conversation->id,
                 'step_id'         => $firstStep->id,
                 'user_message'    => $body,
-                'bot_response'    => $firstStep->question_text,
+                'bot_response'    => $message,
             ]);
 
-            $message = $this->generateMessages($firstStep);
             $resp = $this->sendMessage($message, $client_phone, $our_phone);
 
             return $resp;
@@ -107,35 +109,50 @@ class WhatsappWebhookController extends Controller
 
         // ✅ هنا التحقق من نوع الإجابة
         if (!$this->validateAnswer($currentStep, $body)) {
-            $resp = new MessagingResponse();
-            $resp->message($this->getErrorMessage($currentStep));
+            $resp = $this->sendMessage($this->getErrorMessage($currentStep), $client_phone, $our_phone);
             return $resp;
         }
 
-        // لو صح → نكمل للـ Next Step
-        $nextStep = $currentStep->nextStep;
+        // نعمل شيك علي الخطوة لو هي من نوع اختيارات
+        if($currentStep->expected_answer_type == FlowStepExpectedAnswerTypeEnum::Choice) {
+            $answer = Answer::where('flow_step_id', $currentStep->id)
+                ->where('answer_value', $body)
+                ->first();
+
+            if(!$answer) {
+                $resp = $this->sendMessage("إجابة غير صالحة", $client_phone, $our_phone);
+                return $resp;
+            }
+
+            $nextStep = $answer->nextStep;
+        } else {
+            $nextStep = $currentStep->nextStep;
+
+        }
 
         if ($nextStep) {
             // حدث الـ Conversation
             $conversation->update(['current_step_id' => $nextStep->id]);
+
+
+            $message = $this->generateMessages($nextStep);
 
             // سجل في Conversation Log
             Message::create([
                 'conversation_id' => $conversation->id,
                 'step_id'         => $nextStep->id,
                 'user_message'    => $body,
-                'bot_response'    => $nextStep->question_text,
+                'bot_response'    => $message,
             ]);
 
-            $resp = new MessagingResponse();
-            $resp->message($nextStep->question_text);
+            $resp = $this->sendMessage($message, $client_phone, $our_phone);
             return $resp;
         } else {
             // لو دي آخر خطوة → انهي المحادثة
             $conversation->update(['status' => ConversationStatusEnum::Finished]);
 
-            $resp = new MessagingResponse();
-            $resp->message("✅ شكرًا، تم إنهاء المحادثة.");
+
+            $resp = $this->sendMessage("✅ شكرًا، تم إنهاء المحادثة.", $client_phone, $our_phone);
             return $resp;
         }
     }
@@ -144,16 +161,15 @@ class WhatsappWebhookController extends Controller
     private function validateAnswer($step, $message): bool
     {
         switch ($step->expected_answer_type) {
-            case 'number':
+            case FlowStepExpectedAnswerTypeEnum::Number :
                 return is_numeric($message);
-            case 'choice':
-                $options = json_decode($step->options, true) ?? [];
+            case FlowStepExpectedAnswerTypeEnum::Choice:
+                $options = $step->answers->pluck('answer_value')->toArray();
                 return array_key_exists($message, $options);
             case 'text':
                 return !empty(trim($message));
-            case 'any':
             default:
-                return true;
+                return false;
         }
     }
 
