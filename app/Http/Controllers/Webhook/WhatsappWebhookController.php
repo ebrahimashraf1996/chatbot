@@ -40,7 +40,7 @@ class WhatsappWebhookController extends Controller
     {
         $client_phone = $request->input('From');   // ex: whatsapp:+201234567890
         $body = trim($request->input('Body'));
-        $our_phone   = $request->input('To');     // رقمنا اللي وصله الرسالة
+        $our_phone = $request->input('To');     // رقمنا اللي وصله الرسالة
 
         Log::info($request->all());
         Log::info("📩 رسالة جديدة من {$client_phone}: {$body}");
@@ -72,15 +72,16 @@ class WhatsappWebhookController extends Controller
                 ->latest('finished_at')
                 ->first();
 
-            $finishedAt = Carbon::parse($latest_finished_conversation->finished_at);
+            if ($latest_finished_conversation) {
+                $finishedAt = Carbon::parse($latest_finished_conversation->finished_at);
 
-            $diffInMinutes = $finishedAt->diffInMinutes(now());
+                $diffInMinutes = $finishedAt->diffInMinutes(now());
 
-            if ($diffInMinutes < 1) {
-                $resp = $this->sendMessage("يرجي الانتظار 5 دقائق حتي تتمكن من التواصل مرة اخري", $client_phone, $our_phone);
-                return $resp;
+                if ($diffInMinutes < 1) {
+                    $resp = $this->sendMessage("يرجي الانتظار 5 دقائق حتي تتمكن من التواصل مرة اخري", $client_phone, $our_phone);
+                    return $resp;
+                }
             }
-
 
             // 3) مفيش → نبدأ فلو جديد (Default Flow)
             $flow = $waNumber->flow;
@@ -103,19 +104,19 @@ class WhatsappWebhookController extends Controller
                 ->first();
 
             $conversation = Conversation::create([
-                'user_phone'        => $client_phone,
+                'user_phone' => $client_phone,
                 'service_number_id' => $waNumber->id,
-                'current_step_id'   => $firstStep->id,
-                'status'            => ConversationStatusEnum::Active,
+                'current_step_id' => $firstStep->id,
+                'status' => ConversationStatusEnum::Active,
             ]);
 
             $message = $this->generateMessages($firstStep);
 
             Message::create([
                 'conversation_id' => $conversation->id,
-                'step_id'         => $firstStep->id,
-                'user_message'    => $body,
-                'bot_response'    => $message,
+                'step_id' => $firstStep->id,
+                'user_message' => $body,
+                'bot_response' => $message,
             ]);
 
             $resp = $this->sendMessage($message, $client_phone, $our_phone);
@@ -141,12 +142,12 @@ class WhatsappWebhookController extends Controller
         }
 
         // نعمل شيك علي الخطوة لو هي من نوع اختيارات
-        if($currentStep->expected_answer_type == FlowStepExpectedAnswerTypeEnum::Choice) {
+        if ($currentStep->expected_answer_type == FlowStepExpectedAnswerTypeEnum::Choice) {
             $answer = Answer::where('flow_step_id', $currentStep->id)
                 ->where('answer_value', $body)
                 ->first();
 
-            if(!$answer) {
+            if (!$answer) {
                 $resp = $this->sendMessage("إجابة غير صالحة", $client_phone, $our_phone);
                 return $resp;
             }
@@ -167,9 +168,9 @@ class WhatsappWebhookController extends Controller
             // سجل في Conversation Log
             Message::create([
                 'conversation_id' => $conversation->id,
-                'step_id'         => $nextStep->id,
-                'user_message'    => $body,
-                'bot_response'    => $message,
+                'step_id' => $nextStep->id,
+                'user_message' => $body,
+                'bot_response' => $message,
             ]);
 
             $resp = $this->sendMessage($message, $client_phone, $our_phone);
@@ -222,7 +223,8 @@ class WhatsappWebhookController extends Controller
         }
     }
 
-    public function generateMessages(FlowStep $step, $is_first = false) {
+    public function generateMessages(FlowStep $step, $is_first = false)
+    {
         $message = "{$step->question_text}\n";
 
         if ($step->expected_answer_type == FlowStepExpectedAnswerTypeEnum::Choice) {
@@ -238,9 +240,10 @@ class WhatsappWebhookController extends Controller
         return $message;
     }
 
-    public function sendMessage($message, $customer_phone, $our_phone) {
-        $sid    = $this->account_sid;
-        $token  = $this->auth_token;
+    public function sendMessage($message, $customer_phone, $our_phone)
+    {
+        $sid = $this->account_sid;
+        $token = $this->auth_token;
         $twilio = new Client($sid, $token);
 
         return $twilio->messages
