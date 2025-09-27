@@ -181,15 +181,15 @@ class WhatsappWebhookController extends Controller
         return $message;
     }
 
-    public function sendMessage($message, $phone) {
+    public function sendMessage($message, $customer_phone, $our_phone) {
         $sid    = $this->account_sid;
         $token  = $this->auth_token;
         $twilio = new Client($sid, $token);
 
         return $twilio->messages
-            ->create($phone, // to
+            ->create($customer_phone, // to
                 array(
-                    "from" => $this->fromPhone,
+                    "from" => $our_phone,
                     "body" => $message
                 )
             );
