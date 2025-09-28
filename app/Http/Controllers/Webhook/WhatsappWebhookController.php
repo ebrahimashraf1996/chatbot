@@ -45,6 +45,11 @@ class WhatsappWebhookController extends Controller
         Log::info($request->all());
         Log::info("📩 رسالة جديدة من {$client_phone}: {$body}");
 
+        if ($request->input('event_type') != 'message_received') {
+            Log::info("Wrong Event Type its :" . $request->input('event_type'));
+            return;
+        }
+
         // 1) نجيب رقم الواتساب المستهدف
 //        $waNumber = ServiceNumber::with('flow')->where('phone_number', $our_phone)->first();
 //        if (!$waNumber) {
