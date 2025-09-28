@@ -45,155 +45,155 @@ class WhatsappWebhookController extends Controller
         Log::info($request->all());
         Log::info("📩 رسالة جديدة من {$client_phone}: {$body}");
 
-        if ($request->input('event_type') != 'message_received') {
+        if ($request->filled('event_type') && ($request->input('event_type') != 'message_received')) {
             Log::info("Wrong Event Type its :" . $request->input('event_type'));
             return;
         }
 
         // 1) نجيب رقم الواتساب المستهدف
-//        $waNumber = ServiceNumber::with('flow')->where('phone_number', $our_phone)->first();
-//        if (!$waNumber) {
-//            Log::info("❌ Unknown number");
-//            return;
-//        }
-//
-//        if ($waNumber->status != ServiceNumberStatusEnum::Active) {
-//            Log::info("❌ This Number is Out Of Service");
-//            return;
-//        }
-//
-//        // 2) هل عنده Conversation Active؟
-//        $conversation = Conversation::where('user_phone', $client_phone)
-//            ->where('service_number_id', $waNumber->id)
-//            ->where('status', ConversationStatusEnum::Active)
-//            ->latest('created_at')
-//            ->first();
-//
-//        if (!$conversation) {
-//
-//
-////            $latest_finished_conversation = Conversation::where('user_phone', $client_phone)
-////                ->where('service_number_id', $waNumber->id)
-////                ->where('status', ConversationStatusEnum::Finished)
-////                ->latest('finished_at')
-////                ->first();
-////
-////            if ($latest_finished_conversation) {
-////                $finishedAt = Carbon::parse($latest_finished_conversation->finished_at);
-////
-////                $diffInMinutes = $finishedAt->diffInMinutes(now());
-////
-////                if ($diffInMinutes < 1) {
-////                    $resp = $this->sendMessage("يرجي الانتظار 5 دقائق حتي تتمكن من التواصل مرة اخري", $client_phone, $our_phone);
-////                    return $resp;
-////                }
-////            }
-//
-//            // 3) مفيش → نبدأ فلو جديد (Default Flow)
-//            $flow = $waNumber->flow;
-//
-//            if (!$flow) {
-//                $resp = new MessagingResponse();
-//                $resp->message("❌ لا يوجد Flow افتراضي للرقم ده.");
-//                return $resp;
-//            }
-//
-//            if ($flow->status != FlowStatusEnum::Active) {
-//                $resp = new MessagingResponse();
-//                $resp->message("⚠️ هذا الـ Flow تم تعطيله حالياً.");
-//                return $resp;
-//            }
-//
-//            $firstStep = $flow->steps()
-//                ->with(['flow', 'nextStep', 'answers'])
-//                ->where('is_start', true)
+        $waNumber = ServiceNumber::with('flow')->where('phone_number', $our_phone)->first();
+        if (!$waNumber) {
+            Log::info("❌ Unknown number");
+            return;
+        }
+
+        if ($waNumber->status != ServiceNumberStatusEnum::Active) {
+            Log::info("❌ This Number is Out Of Service");
+            return;
+        }
+
+        // 2) هل عنده Conversation Active؟
+        $conversation = Conversation::where('user_phone', $client_phone)
+            ->where('service_number_id', $waNumber->id)
+            ->where('status', ConversationStatusEnum::Active)
+            ->latest('created_at')
+            ->first();
+
+        if (!$conversation) {
+
+
+//            $latest_finished_conversation = Conversation::where('user_phone', $client_phone)
+//                ->where('service_number_id', $waNumber->id)
+//                ->where('status', ConversationStatusEnum::Finished)
+//                ->latest('finished_at')
 //                ->first();
 //
-//            $conversation = Conversation::create([
-//                'user_phone' => $client_phone,
-//                'service_number_id' => $waNumber->id,
-//                'current_step_id' => $firstStep->id,
-//                'status' => ConversationStatusEnum::Active,
-//            ]);
+//            if ($latest_finished_conversation) {
+//                $finishedAt = Carbon::parse($latest_finished_conversation->finished_at);
 //
-//            $message = $this->generateMessages($firstStep, true);
+//                $diffInMinutes = $finishedAt->diffInMinutes(now());
 //
-//            Message::create([
-//                'conversation_id' => $conversation->id,
-//                'step_id' => $firstStep->id,
-//                'user_message' => $body,
-//                'bot_response' => $message,
-//            ]);
-//
-//            $resp = $this->sendMessage($message, $client_phone, $our_phone);
-//
-//            return $resp;
-//        }
-//
-//        if ($body == 'إنهاء المحادثة') {
-//            $conversation->update(['status' => ConversationStatusEnum::Finished, 'finished_at' => now()]);
-//
-//
-//            $resp = $this->sendMessage("✅ شكرًا، تم إنهاء المحادثة.", $client_phone, $our_phone);
-//            return $resp;
-//        }
-//
-//        // 4) لو عنده Conversation Active → نكمل
-//        $currentStep = $conversation->currentStep;
-//
-//        // ✅ هنا التحقق من نوع الإجابة
-//        if (!$this->validateAnswer($currentStep, $body)) {
-//            $resp = $this->sendMessage($this->getErrorMessage($currentStep), $client_phone, $our_phone);
-//            return $resp;
-//        }
-//
-//        // نعمل شيك علي الخطوة لو هي من نوع اختيارات
-//        if ($currentStep->expected_answer_type == FlowStepExpectedAnswerTypeEnum::Choice) {
-//            $answer = Answer::where('flow_step_id', $currentStep->id)
-//                ->where('answer_value', $body)
-//                ->first();
-//
-//            if (!$answer) {
-//                $resp = $this->sendMessage("إجابة غير صالحة", $client_phone, $our_phone);
-//                return $resp;
+//                if ($diffInMinutes < 1) {
+//                    $resp = $this->sendMessage("يرجي الانتظار 5 دقائق حتي تتمكن من التواصل مرة اخري", $client_phone, $our_phone);
+//                    return $resp;
+//                }
 //            }
-//
-//            $nextStep = $answer->nextStep;
-//        } else {
-//            $nextStep = $currentStep->nextStep;
-//
-//        }
-//
-//        if ($nextStep) {
-//            // حدث الـ Conversation
-//            $conversation->update(['current_step_id' => $nextStep->id]);
-//
-//
-//            $message = $this->generateMessages($nextStep);
-//
-//            // سجل في Conversation Log
-//            Message::create([
-//                'conversation_id' => $conversation->id,
-//                'step_id' => $nextStep->id,
-//                'user_message' => $body,
-//                'bot_response' => $message,
-//            ]);
-//
-//            $resp = $this->sendMessage($message, $client_phone, $our_phone);
-//
-//            if ($nextStep->is_end) {
-//                $conversation->update(['status' => ConversationStatusEnum::Finished, 'finished_at' => now()]);
-//            }
-//
-//            return $resp;
-//        } else {
-//            // لو دي آخر خطوة → انهي المحادثة
-//            $conversation->update(['status' => ConversationStatusEnum::Finished, 'finished_at' => now()]);
-//
-//
-//            $resp = $this->sendMessage("✅ شكرًا، تم إنهاء المحادثة.", $client_phone, $our_phone);
-//            return $resp;
-//        }
+
+            // 3) مفيش → نبدأ فلو جديد (Default Flow)
+            $flow = $waNumber->flow;
+
+            if (!$flow) {
+                $resp = new MessagingResponse();
+                $resp->message("❌ لا يوجد Flow افتراضي للرقم ده.");
+                return $resp;
+            }
+
+            if ($flow->status != FlowStatusEnum::Active) {
+                $resp = new MessagingResponse();
+                $resp->message("⚠️ هذا الـ Flow تم تعطيله حالياً.");
+                return $resp;
+            }
+
+            $firstStep = $flow->steps()
+                ->with(['flow', 'nextStep', 'answers'])
+                ->where('is_start', true)
+                ->first();
+
+            $conversation = Conversation::create([
+                'user_phone' => $client_phone,
+                'service_number_id' => $waNumber->id,
+                'current_step_id' => $firstStep->id,
+                'status' => ConversationStatusEnum::Active,
+            ]);
+
+            $message = $this->generateMessages($firstStep, true);
+
+            Message::create([
+                'conversation_id' => $conversation->id,
+                'step_id' => $firstStep->id,
+                'user_message' => $body,
+                'bot_response' => $message,
+            ]);
+
+            $resp = $this->sendMessage($message, $client_phone, $our_phone);
+
+            return $resp;
+        }
+
+        if ($body == 'إنهاء المحادثة') {
+            $conversation->update(['status' => ConversationStatusEnum::Finished, 'finished_at' => now()]);
+
+
+            $resp = $this->sendMessage("✅ شكرًا، تم إنهاء المحادثة.", $client_phone, $our_phone);
+            return $resp;
+        }
+
+        // 4) لو عنده Conversation Active → نكمل
+        $currentStep = $conversation->currentStep;
+
+        // ✅ هنا التحقق من نوع الإجابة
+        if (!$this->validateAnswer($currentStep, $body)) {
+            $resp = $this->sendMessage($this->getErrorMessage($currentStep), $client_phone, $our_phone);
+            return $resp;
+        }
+
+        // نعمل شيك علي الخطوة لو هي من نوع اختيارات
+        if ($currentStep->expected_answer_type == FlowStepExpectedAnswerTypeEnum::Choice) {
+            $answer = Answer::where('flow_step_id', $currentStep->id)
+                ->where('answer_value', $body)
+                ->first();
+
+            if (!$answer) {
+                $resp = $this->sendMessage("إجابة غير صالحة", $client_phone, $our_phone);
+                return $resp;
+            }
+
+            $nextStep = $answer->nextStep;
+        } else {
+            $nextStep = $currentStep->nextStep;
+
+        }
+
+        if ($nextStep) {
+            // حدث الـ Conversation
+            $conversation->update(['current_step_id' => $nextStep->id]);
+
+
+            $message = $this->generateMessages($nextStep);
+
+            // سجل في Conversation Log
+            Message::create([
+                'conversation_id' => $conversation->id,
+                'step_id' => $nextStep->id,
+                'user_message' => $body,
+                'bot_response' => $message,
+            ]);
+
+            $resp = $this->sendMessage($message, $client_phone, $our_phone);
+
+            if ($nextStep->is_end) {
+                $conversation->update(['status' => ConversationStatusEnum::Finished, 'finished_at' => now()]);
+            }
+
+            return $resp;
+        } else {
+            // لو دي آخر خطوة → انهي المحادثة
+            $conversation->update(['status' => ConversationStatusEnum::Finished, 'finished_at' => now()]);
+
+
+            $resp = $this->sendMessage("✅ شكرًا، تم إنهاء المحادثة.", $client_phone, $our_phone);
+            return $resp;
+        }
     }
 
 
